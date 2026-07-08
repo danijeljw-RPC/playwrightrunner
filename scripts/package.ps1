@@ -12,7 +12,7 @@ $ErrorActionPreference = "Stop"
 
 $Project = "PlaywrightRunner"
 $ProjectPath = "src\${Project}\${Project}.csproj"
-$FlowFile = "saucedemo.yaml"
+$FlowFile = "package-smoke.yaml"
 $Configuration = "Release"
 $Framework = "net10.0"
 $BrowsersNormalized = $Browsers.ToLowerInvariant()

@@ -1,0 +1,19 @@
+specVersion: 1
+name: Package Smoke
+browser: chromium
+headless: true
+
+steps:
+  - name: Open self-contained smoke page
+    action: goto
+    url: "data:text/html,%3C!doctype%20html%3E%3Ctitle%3EPlaywrightRunner%20Smoke%3C%2Ftitle%3E%3Ch1%20id%3D%22status%22%3EPackage%20smoke%20passed%3C%2Fh1%3E"
+
+  - name: Confirm smoke content
+    action: expect-text
+    selector: "#status"
+    value: Package smoke passed
+
+  - name: Capture smoke screenshot
+    action: screenshot
+    path: TestResults/package-smoke.png
+    fullPage: true

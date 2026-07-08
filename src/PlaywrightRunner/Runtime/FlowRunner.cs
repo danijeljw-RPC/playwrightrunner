@@ -30,18 +30,23 @@ public sealed class FlowRunner
         {
             await using (browser)
             {
-                var page = await browser.NewPageAsync();
+                var context = await _browserFactory.CreateContextAsync(browser, flow);
 
-                Console.WriteLine($"Running: {flow.Name}");
-                Console.WriteLine();
-
-                foreach (var step in flow.Steps)
+                await using (context)
                 {
-                    var result = await RunStepAsync(page, flow, step);
-                    results.Add(result);
+                    var page = await context.NewPageAsync();
 
-                    if (!result.Passed)
-                        break;
+                    Console.WriteLine($"Running: {flow.Name}");
+                    Console.WriteLine();
+
+                    foreach (var step in flow.Steps)
+                    {
+                        var result = await RunStepAsync(page, flow, step);
+                        results.Add(result);
+
+                        if (!result.Passed)
+                            break;
+                    }
                 }
             }
         }

@@ -3,7 +3,7 @@ set -euo pipefail
 
 PROJECT="PlaywrightRunner"
 PROJECT_PATH="src/$PROJECT/$PROJECT.csproj"
-FLOW_FILE="saucedemo.yaml"
+FLOW_FILE="package-smoke.yaml"
 CONFIGURATION="Release"
 FRAMEWORK="net10.0"
 RUNTIME="${1:-osx-arm64}"

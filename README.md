@@ -5,9 +5,10 @@ Runs Playwright browser flows from YAML or JSON files.
 ## Project Layout
 
 - `src/PlaywrightRunner/` - application source code
-- `scripts/package.sh` - builds, publishes, installs bundled browser assets, copies `saucedemo.yaml`, and creates a zip
-- `saucedemo.yaml` - sample flow kept at the project root
-- `tests/fixtures/` - local integration fixture for runner actions
+- `scripts/package.sh` - builds, publishes, installs bundled browser assets, copies `package-smoke.yaml`, and creates a zip
+- `package-smoke.yaml` - deterministic self-contained smoke flow copied into packaged output
+- `saucedemo.yaml` - external website sample flow kept at the project root
+- `src/Tests/fixtures/` - local integration fixture for runner actions
 
 ## Run
 
@@ -16,6 +17,19 @@ dotnet run --project src/PlaywrightRunner/PlaywrightRunner.csproj -- saucedemo.y
 ```
 
 The runner expects one argument: the path to a `.yaml`, `.yml`, or `.json` flow file.
+
+CLI options:
+
+```bash
+PlaywrightRunner -h
+PlaywrightRunner --help
+PlaywrightRunner -v
+PlaywrightRunner --version
+```
+
+`-v` and `--version` print only the version number.
+
+For packaged CLI verification, use `package-smoke.yaml`. It uses a self-contained `data:` URL so it does not depend on public websites, search engines, or network access.
 
 ## Package
 
@@ -49,6 +63,7 @@ bash scripts/package.sh osx-arm64 all
 ## Flow Format
 
 ```yaml
+specVersion: 1
 name: Example Flow
 baseUrl: https://www.saucedemo.com
 browser: chromium
@@ -62,11 +77,52 @@ steps:
 
 Top-level fields:
 
+- `specVersion` - optional flow file spec version. Defaults to `1` when omitted for legacy files. This runner supports spec version `1` and rejects newer versions.
 - `name` - display name for the flow.
 - `baseUrl` - optional base URL used for relative `url` values.
 - `browser` - `chromium`, `firefox`, or `webkit`.
-- `headless` - `true` or `false`.
+- `headless` - optional. Must be `true` when present. `headless: false` is rejected because PlaywrightRunner is a CLI-only tool intended for packaged and containerized execution.
+- `userAgent` - optional browser context user agent.
+- `locale` - optional browser context locale, such as `en-US`.
+- `timezoneId` - optional browser context timezone, such as `America/New_York`.
+- `viewport` - optional browser context viewport with `width` and `height`.
+- `extraHttpHeaders` - optional browser context HTTP headers sent with page requests.
 - `steps` - ordered list of actions.
+
+The same fields are supported in JSON:
+
+```json
+{
+  "specVersion": 1,
+  "name": "Example Flow",
+  "baseUrl": "https://www.saucedemo.com",
+  "browser": "chromium",
+  "headless": true,
+  "steps": []
+}
+```
+
+Browser context options can be used when a target site expects a normal browser profile:
+
+```yaml
+specVersion: 1
+name: Search Example
+baseUrl: https://duckduckgo.com
+browser: chromium
+headless: true
+userAgent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+locale: en-US
+timezoneId: America/New_York
+viewport:
+  width: 1365
+  height: 768
+extraHttpHeaders:
+  accept-language: en-US,en;q=0.9
+steps:
+  - name: Pause after landing
+    action: wait
+    timeoutMs: 1500
+```
 
 Common step fields:
 
@@ -348,16 +404,16 @@ Waits for `timeoutMs` milliseconds.
 
 ## Local Action Fixture
 
-The fixture flow in `tests/fixtures/new-actions.yaml` exercises the new action set.
+The fixture flow in `src/Tests/fixtures/new-actions.yaml` exercises the new action set.
 
 Start the fixture server:
 
 ```bash
-python3 -m http.server 8765 --directory tests/fixtures
+python3 -m http.server 8765 --directory src/Tests/fixtures
 ```
 
 Run the fixture:
 
 ```bash
-dotnet run --project src/PlaywrightRunner/PlaywrightRunner.csproj -- tests/fixtures/new-actions.yaml
+dotnet run --project src/PlaywrightRunner/PlaywrightRunner.csproj -- src/Tests/fixtures/new-actions.yaml
 ```

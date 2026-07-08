@@ -19,9 +19,31 @@ public sealed class BrowserFactory
 
         var browser = await browserType.LaunchAsync(new()
         {
-            Headless = flow.Headless
+            Headless = true
         });
 
         return (playwright, browser);
+    }
+
+    public async Task<IBrowserContext> CreateContextAsync(IBrowser browser, FlowDefinition flow)
+    {
+        var options = new BrowserNewContextOptions
+        {
+            ExtraHTTPHeaders = flow.ExtraHttpHeaders,
+            Locale = flow.Locale,
+            TimezoneId = flow.TimezoneId,
+            UserAgent = flow.UserAgent
+        };
+
+        if (flow.Viewport is not null)
+        {
+            options.ViewportSize = new ViewportSize
+            {
+                Width = flow.Viewport.Width,
+                Height = flow.Viewport.Height
+            };
+        }
+
+        return await browser.NewContextAsync(options);
     }
 }

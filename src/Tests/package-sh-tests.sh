@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 
 fail() {
   echo "FAIL: $*" >&2
@@ -15,6 +15,7 @@ make_test_repo() {
   cp "$ROOT_DIR/scripts/package.sh" "$work_dir/scripts/package.sh"
   touch "$work_dir/src/PlaywrightRunner/PlaywrightRunner.csproj"
   printf 'flow: test\n' > "$work_dir/saucedemo.yaml"
+  printf 'flow: smoke\n' > "$work_dir/package-smoke.yaml"
 
   cat > "$work_dir/fake-bin/dotnet" <<'STUB'
 #!/usr/bin/env bash
@@ -73,6 +74,7 @@ repo_one="$tmp_dir/chrome-default"
 make_test_repo "$repo_one"
 run_package "$repo_one" osx-arm64
 assert_file_exists "$repo_one/artifacts/zips/PlaywrightRunner-osx-arm64-chrome.zip"
+assert_file_exists "$repo_one/artifacts/publish/osx-arm64-chrome/package-smoke.yaml"
 
 repo_two="$tmp_dir/chromium-alias"
 make_test_repo "$repo_two"

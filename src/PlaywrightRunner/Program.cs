@@ -1,7 +1,28 @@
 using PlaywrightRunner.Runtime;
 using PlaywrightRunner.Services;
 
+const string Version = "0.2.0";
+
 var inputPath = args.FirstOrDefault();
+
+if (inputPath is "-v" or "--version")
+{
+    Console.WriteLine(Version);
+    return 0;
+}
+
+if (inputPath is "-h" or "--help")
+{
+    Console.WriteLine(
+        """
+        Usage: PlaywrightRunner <flow.json|flow.yaml>
+
+        Options:
+          -h, --help       Show help.
+          -v, --version    Print version number.
+        """);
+    return 0;
+}
 
 if (string.IsNullOrWhiteSpace(inputPath))
 {

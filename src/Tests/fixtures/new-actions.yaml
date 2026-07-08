@@ -1,3 +1,4 @@
+specVersion: 1
 name: New Actions Fixture
 baseUrl: http://127.0.0.1:8765
 browser: chromium
@@ -61,7 +62,7 @@ steps:
   - name: Upload file
     action: upload
     selector: "#upload"
-    path: tests/fixtures/upload.txt
+    path: src/Tests/fixtures/upload.txt
 
   - name: Confirm upload
     action: expect-text
