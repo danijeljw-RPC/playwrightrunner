@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>New Actions Fixture</title>
+</head>
+<body>
+  <label for="plan">Plan</label>
+  <select id="plan">
+    <option value="basic">Basic</option>
+    <option value="premium">Premium</option>
+  </select>
+  <div id="selected">basic</div>
+
+  <label>
+    <input id="terms" type="checkbox">
+    Terms
+  </label>
+  <div id="terms-state">unchecked</div>
+
+  <input id="keys" aria-label="Keys">
+  <div id="key-state">none</div>
+
+  <button id="hover-target">Hover target</button>
+  <div id="hover-state">idle</div>
+
+  <input id="upload" type="file">
+  <div id="upload-state">none</div>
+
+  <a id="download" href="/download.txt" download>Download file</a>
+
+  <script>
+    document.querySelector("#plan").addEventListener("change", event => {
+      document.querySelector("#selected").textContent = event.target.value;
+    });
+
+    document.querySelector("#terms").addEventListener("change", event => {
+      document.querySelector("#terms-state").textContent = event.target.checked ? "checked" : "unchecked";
+    });
+
+    document.querySelector("#keys").addEventListener("keydown", event => {
+      document.querySelector("#key-state").textContent = event.key;
+    });
+
+    document.querySelector("#hover-target").addEventListener("mouseenter", () => {
+      document.querySelector("#hover-state").textContent = "hovered";
+    });
+
+    document.querySelector("#upload").addEventListener("change", event => {
+      document.querySelector("#upload-state").textContent = event.target.files[0]?.name ?? "none";
+    });
+  </script>
+</body>
+</html>

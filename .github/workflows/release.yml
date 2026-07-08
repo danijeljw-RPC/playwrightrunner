@@ -1,0 +1,76 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  validate-tag:
+    name: Validate tag
+    runs-on: ubuntu-latest
+    steps:
+      - name: Require vX.Y.Z tag
+        shell: bash
+        run: |
+          if [[ ! "$GITHUB_REF_NAME" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "Release tags must match vX.Y.Z, for example v1.0.0." >&2
+            exit 1
+          fi
+
+  build:
+    name: Build ${{ matrix.runtime.name }} ${{ matrix.browser }}
+    needs: validate-tag
+    strategy:
+      fail-fast: false
+      matrix:
+        runtime:
+          - name: linux-x64
+            os: ubuntu-latest
+          - name: win-x64
+            os: windows-latest
+        browser:
+          - chrome
+          - firefox
+          - webkit
+          - all
+    runs-on: ${{ matrix.runtime.os }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Package
+        shell: bash
+        run: bash scripts/package.sh "${{ matrix.runtime.name }}" "${{ matrix.browser }}" "$GITHUB_REF_NAME"
+
+      - name: Upload package
+        uses: actions/upload-artifact@v4
+        with:
+          name: PlaywrightRunner-${{ matrix.runtime.name }}-${{ matrix.browser }}-${{ github.ref_name }}
+          path: artifacts/zips/*.zip
+          if-no-files-found: error
+
+  release:
+    name: Create release
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download packages
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts/zips
+          merge-multiple: true
+
+      - name: Create GitHub release
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release create "$GITHUB_REF_NAME" artifacts/zips/*.zip --title "$GITHUB_REF_NAME"

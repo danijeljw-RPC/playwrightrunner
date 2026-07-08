@@ -1,0 +1,85 @@
+name: New Actions Fixture
+baseUrl: http://127.0.0.1:8765
+browser: chromium
+headless: true
+
+steps:
+  - name: Start tracing
+    action: trace-start
+
+  - name: Open fixture
+    action: goto
+    url: /new-actions.html
+
+  - name: Select premium plan
+    action: select
+    selector: "#plan"
+    value: premium
+
+  - name: Check selected plan
+    action: expect-text
+    selector: "#selected"
+    value: premium
+
+  - name: Check terms
+    action: check
+    selector: "#terms"
+
+  - name: Confirm checked
+    action: expect-text
+    selector: "#terms-state"
+    value: checked
+
+  - name: Uncheck terms
+    action: uncheck
+    selector: "#terms"
+
+  - name: Confirm unchecked
+    action: expect-text
+    selector: "#terms-state"
+    value: unchecked
+
+  - name: Press key
+    action: press
+    selector: "#keys"
+    value: Enter
+
+  - name: Confirm key
+    action: expect-text
+    selector: "#key-state"
+    value: Enter
+
+  - name: Hover target
+    action: hover
+    selector: "#hover-target"
+
+  - name: Confirm hover
+    action: expect-text
+    selector: "#hover-state"
+    value: hovered
+
+  - name: Upload file
+    action: upload
+    selector: "#upload"
+    path: tests/fixtures/upload.txt
+
+  - name: Confirm upload
+    action: expect-text
+    selector: "#upload-state"
+    value: upload.txt
+
+  - name: Download file
+    action: download
+    selector: "#download"
+    path: TestResults/downloaded-file.txt
+
+  - name: API request
+    action: api-request
+    method: GET
+    url: /api-response.json
+    status: 200
+    path: TestResults/api-response.json
+
+  - name: Stop tracing
+    action: trace-stop
+    path: TestResults/trace.zip

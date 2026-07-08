@@ -1,0 +1,85 @@
+name: SauceDemo Checkout Flow
+baseUrl: https://www.saucedemo.com
+browser: chromium
+headless: true
+
+steps:
+  - name: Open login page
+    action: goto
+    url: /
+
+  - name: Enter username
+    action: fill
+    selector: placeholder=Username
+    value: standard_user
+
+  - name: Enter password
+    action: fill
+    selector: placeholder=Password
+    value: secret_sauce
+
+  - name: Click login
+    action: click
+    selector: role=button[name='Login']
+
+  - name: Check inventory URL
+    action: expect-url
+    value: .*/inventory.html
+
+  - name: Check products title
+    action: expect-visible
+    selector: text=Products
+
+  - name: Add first item
+    action: click
+    selector: role=button[name='Add to cart']
+    index: 0
+
+  - name: Check cart badge
+    action: expect-text
+    selector: .shopping_cart_badge
+    value: "1"
+
+  - name: Screenshot inventory
+    action: screenshot
+    path: TestResults/inventory-after-add.png
+    fullPage: true
+
+  - name: Open cart
+    action: click
+    selector: .shopping_cart_link
+
+  - name: Check cart page
+    action: expect-url
+    value: .*/cart.html
+
+  - name: Start checkout
+    action: click
+    selector: role=button[name='Checkout']
+
+  - name: Enter first name
+    action: fill
+    selector: placeholder=First Name
+    value: Danijel
+
+  - name: Enter last name
+    action: fill
+    selector: placeholder=Last Name
+    value: Wynyard
+
+  - name: Enter postal code
+    action: fill
+    selector: placeholder=Zip/Postal Code
+    value: "2000"
+
+  - name: Continue checkout
+    action: click
+    selector: role=button[name='Continue']
+
+  - name: Finish order
+    action: click
+    selector: role=button[name='Finish']
+
+  - name: Confirm complete
+    action: expect-visible
+    selector: text=Thank you for your order!

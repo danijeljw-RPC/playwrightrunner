@@ -1,0 +1,98 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+PROJECT="PlaywrightRunner"
+PROJECT_PATH="src/$PROJECT/$PROJECT.csproj"
+FLOW_FILE="saucedemo.yaml"
+CONFIGURATION="Release"
+FRAMEWORK="net10.0"
+RUNTIME="${1:-osx-arm64}"
+BROWSERS="${2:-chromium}"
+VERSION_SUFFIX="${3:-${PACKAGE_VERSION:-}}"
+BROWSERS_NORMALIZED="$(printf '%s' "$BROWSERS" | tr '[:upper:]' '[:lower:]')"
+
+OUTPUT_ROOT="artifacts"
+PUBLISH_DIR="$OUTPUT_ROOT/publish/$RUNTIME"
+ZIP_DIR="$OUTPUT_ROOT/zips"
+
+case "$BROWSERS_NORMALIZED" in
+  chromium|chrome)
+    PLAYWRIGHT_BROWSERS=(chromium)
+    BROWSER_ZIP_SUFFIX="chrome"
+    ;;
+  firefox)
+    PLAYWRIGHT_BROWSERS=(firefox)
+    BROWSER_ZIP_SUFFIX="firefox"
+    ;;
+  webkit)
+    PLAYWRIGHT_BROWSERS=(webkit)
+    BROWSER_ZIP_SUFFIX="webkit"
+    ;;
+  all)
+    PLAYWRIGHT_BROWSERS=(chromium firefox webkit)
+    BROWSER_ZIP_SUFFIX="all"
+    ;;
+  *)
+    echo "Unsupported browser bundle: $BROWSERS" >&2
+    echo "Use one of: chromium, chrome, firefox, webkit, all" >&2
+    exit 2
+    ;;
+esac
+
+ZIP_BASENAME="$PROJECT-$RUNTIME-$BROWSER_ZIP_SUFFIX"
+if [[ -n "$VERSION_SUFFIX" ]]; then
+  ZIP_BASENAME="$ZIP_BASENAME-$VERSION_SUFFIX"
+fi
+ZIP_FILE="$ZIP_DIR/$ZIP_BASENAME.zip"
+
+echo "Runtime: $RUNTIME"
+echo "Browsers: $BROWSERS"
+
+echo "Cleaning artifacts..."
+rm -rf "$OUTPUT_ROOT"
+mkdir -p "$PUBLISH_DIR"
+mkdir -p "$ZIP_DIR"
+
+echo "Restoring..."
+dotnet restore "$PROJECT_PATH"
+
+echo "Building..."
+dotnet build "$PROJECT_PATH" \
+  -c "$CONFIGURATION" \
+  --no-restore
+
+echo "Testing..."
+dotnet test "$PROJECT_PATH" \
+  -c "$CONFIGURATION" \
+  --no-build
+
+echo "Publishing..."
+dotnet publish "$PROJECT_PATH" \
+  -c "$CONFIGURATION" \
+  -f "$FRAMEWORK" \
+  -r "$RUNTIME" \
+  --self-contained true \
+  -o "$PUBLISH_DIR" \
+  /p:PublishSingleFile=false \
+  /p:PublishTrimmed=false
+
+echo "Installing bundled Playwright browsers: ${PLAYWRIGHT_BROWSERS[*]}"
+pushd "$PUBLISH_DIR" >/dev/null
+
+PLAYWRIGHT_BROWSERS_PATH="$(pwd)/ms-playwright" \
+  pwsh -NoProfile ./playwright.ps1 install "${PLAYWRIGHT_BROWSERS[@]}"
+
+popd >/dev/null
+
+if [[ -f "$FLOW_FILE" ]]; then
+  echo "Copying sample flow..."
+  cp "$FLOW_FILE" "$PUBLISH_DIR/"
+fi
+
+echo "Zipping..."
+pushd "$PUBLISH_DIR" >/dev/null
+zip -qr "../../zips/$ZIP_BASENAME.zip" .
+popd >/dev/null
+
+echo "Done:"
+echo "$ZIP_FILE"
