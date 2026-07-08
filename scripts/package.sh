@@ -12,7 +12,7 @@ VERSION_SUFFIX="${3:-${PACKAGE_VERSION:-}}"
 BROWSERS_NORMALIZED="$(printf '%s' "$BROWSERS" | tr '[:upper:]' '[:lower:]')"
 
 OUTPUT_ROOT="artifacts"
-PUBLISH_DIR="$OUTPUT_ROOT/publish/$RUNTIME"
+PUBLISH_ROOT="$OUTPUT_ROOT/publish"
 ZIP_DIR="$OUTPUT_ROOT/zips"
 
 case "$BROWSERS_NORMALIZED" in
@@ -39,6 +39,8 @@ case "$BROWSERS_NORMALIZED" in
     ;;
 esac
 
+PUBLISH_DIR="$PUBLISH_ROOT/$RUNTIME-$BROWSER_ZIP_SUFFIX"
+
 ZIP_BASENAME="$PROJECT-$RUNTIME-$BROWSER_ZIP_SUFFIX"
 if [[ -n "$VERSION_SUFFIX" ]]; then
   ZIP_BASENAME="$ZIP_BASENAME-$VERSION_SUFFIX"
@@ -48,10 +50,16 @@ ZIP_FILE="$ZIP_DIR/$ZIP_BASENAME.zip"
 echo "Runtime: $RUNTIME"
 echo "Browsers: $BROWSERS"
 
-echo "Cleaning artifacts..."
-rm -rf "$OUTPUT_ROOT"
+echo "Cleaning publish directory for current package..."
+rm -rf "$PUBLISH_DIR"
 mkdir -p "$PUBLISH_DIR"
 mkdir -p "$ZIP_DIR"
+rm -f "$ZIP_FILE"
+
+if [[ ! -f "$PROJECT_PATH" ]]; then
+  echo "Project file not found: $PROJECT_PATH" >&2
+  exit 2
+fi
 
 echo "Restoring..."
 dotnet restore "$PROJECT_PATH"
@@ -75,6 +83,11 @@ dotnet publish "$PROJECT_PATH" \
   -o "$PUBLISH_DIR" \
   /p:PublishSingleFile=false \
   /p:PublishTrimmed=false
+
+if [[ ! -f "$PUBLISH_DIR/playwright.ps1" ]]; then
+  echo "Playwright install script not found in publish directory: $PUBLISH_DIR/playwright.ps1" >&2
+  exit 2
+fi
 
 echo "Installing bundled Playwright browsers: ${PLAYWRIGHT_BROWSERS[*]}"
 pushd "$PUBLISH_DIR" >/dev/null
