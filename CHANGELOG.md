@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## v0.3.0
 
 - Added `--report-name` to customize the PDF cover title while retaining `Playwright Test Report` as the default.
 - Updated the Manhattan suite script to generate reports titled `Manhattan Test Report`.
