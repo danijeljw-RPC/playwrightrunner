@@ -482,7 +482,13 @@ $RECYCLE.BIN/
 *.swp
 
 # Other files
-*_uat*.yaml
-*_prod*.yaml
+*_demo*.yaml
+*_cfg*.yaml
 *_dev*.yaml
+*_sup*.yaml
+*_trn*.yaml
+*_qa*.yaml
+*_uat*.yaml
 *_preprod*.yaml
+*_pp*.yaml
+*_prod*.yaml
