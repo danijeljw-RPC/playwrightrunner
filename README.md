@@ -1,70 +1,195 @@
 # PlaywrightRunner
 
-Runs Playwright browser flows from YAML or JSON files.
+Runs Playwright browser flows from YAML or JSON files and generates JSON execution results. Existing results from one or more flows can be combined into a simple PDF report with embedded screenshots.
 
-## Project Layout
+## Project layout
 
 - `src/PlaywrightRunner/` - application source code
-- `scripts/package.sh` - builds, publishes, installs bundled browser assets, copies `package-smoke.yaml`, and creates a zip
-- `package-smoke.yaml` - deterministic self-contained smoke flow copied into packaged output
-- `saucedemo.yaml` - external website sample flow kept at the project root
-- `src/Tests/fixtures/` - local integration fixture for runner actions
+- `src/Tests/PlaywrightRunner.Tests/` - unit and CLI tests
+- `scripts/package.sh` - macOS/Linux packaging
+- `scripts/package.ps1` - Windows packaging
+- `package-smoke.yaml` - deterministic self-contained packaged smoke flow
+- `saucedemo.yaml` - external website sample flow
+- `src/Tests/fixtures/` - local integration fixtures
 
-## Run
+## Run a flow
+
+```bash
+PlaywrightRunner saucedemo.yaml
+```
+
+From source:
 
 ```bash
 dotnet run --project src/PlaywrightRunner/PlaywrightRunner.csproj -- saucedemo.yaml
 ```
 
-The runner expects one argument: the path to a `.yaml`, `.yml`, or `.json` flow file.
+A flow executes its steps in order. Execution stops after the first failed step. The JSON result path is determined by the flow specification version.
 
-CLI options:
+## Generate a PDF report
+
+Generate a report from a single flow:
 
 ```bash
-PlaywrightRunner -h
-PlaywrightRunner --help
-PlaywrightRunner -v
-PlaywrightRunner --version
+PlaywrightRunner --report --input saucedemo.yaml
 ```
 
-`-v` and `--version` print only the version number.
+The default output is:
 
-For packaged CLI verification, use `package-smoke.yaml`. It uses a self-contained `data:` URL so it does not depend on public websites, search engines, or network access.
+```text
+TestResults/playwright-report.pdf
+```
+
+Choose an output path:
+
+```bash
+PlaywrightRunner \
+  --report \
+  --output TestResults/saucedemo-report.pdf \
+  --input saucedemo.yaml
+```
+
+Combine multiple flows in the order supplied:
+
+```bash
+PlaywrightRunner \
+  --report \
+  --output TestResults/combined-report.pdf \
+  --input saucedemo.yaml \
+  --input app_uat_2.yaml
+```
+
+Equals syntax is also supported:
+
+```bash
+PlaywrightRunner --report \
+  --output=TestResults/combined-report.pdf \
+  --input=saucedemo.yaml \
+  --input=app_uat_2.yaml
+```
+
+`--path` is accepted as an alias for `--output`:
+
+```bash
+PlaywrightRunner --report --path=TestResults/report.pdf --input=flow.yaml
+```
+
+The PDF contains:
+
+- an overall cover page and combined result counts
+- one overview page for each flow
+- one page for each declared flow step
+- required selector, URL, assertion, path, timeout, and other action details
+- passed, failed, or not-run status
+- execution duration
+- action output such as `get-text` results
+- failure errors
+- embedded images for screenshot steps
+
+`fill` values, API request bodies, and sensitive API headers are shown as `[redacted]` so credentials are not copied into reports.
+
+Report mode reads existing files only. It does not start Playwright or require an installed browser.
+
+## PDF library
+
+PDF generation uses QuestPDF 2026.7.1 and configures its Community licence. The repository is open source; review the QuestPDF licence again if the project or distribution model changes.
+
+## Result path rules
+
+### Specification version 1
+
+Version 1 uses the legacy JSON result path when `reportPath` is omitted:
+
+```text
+TestResults/report.json
+```
+
+Example:
+
+```yaml
+specVersion: 1
+name: SauceDemo Checkout Flow
+baseUrl: https://www.saucedemo.com
+browser: chromium
+headless: true
+steps: []
+```
+
+Omitting `specVersion` also means version 1.
+
+### Specification version 2
+
+Version 2 requires an explicit `reportPath`:
+
+```yaml
+specVersion: 2
+name: APP UAT
+reportPath: TestResults/app-uat/app-uat.json
+baseUrl: https://uat.app.one/app_uat
+browser: chromium
+headless: true
+steps: []
+```
+
+Report generation first checks paths relative to the flow file, then the current working directory. Screenshot resolution also checks the JSON result directory.
+
+If execution stopped after a failed step, remaining YAML steps are included in the PDF as `NOT RUN`.
+
+## CLI options
+
+```text
+Usage:
+  PlaywrightRunner <flow.json|flow.yaml>
+  PlaywrightRunner --report [--output <report.pdf>] --input <flow.yaml> [--input <flow.yaml> ...]
+
+Options:
+  -h, --help            Show help.
+  -v, --version         Print version number.
+  --report              Generate a PDF report from existing flow result files.
+  -o, --output, --path  PDF output path. Defaults to TestResults/playwright-report.pdf.
+  -i, --input           Flow YAML or JSON file. Repeat for multiple report sections.
+```
 
 ## Package
+
+Windows:
+
+```powershell
+./scripts/package.ps1
+```
+
+macOS or Linux:
 
 ```bash
 bash scripts/package.sh
 ```
 
-By default this creates:
-
-```text
-artifacts/zips/PlaywrightRunner-osx-arm64.zip
-```
-
-You can pass another .NET runtime identifier:
+The default package includes Chromium. Select another browser bundle:
 
 ```bash
-bash scripts/package.sh linux-x64
+bash scripts/package.sh linux-x64 chromium
+bash scripts/package.sh linux-x64 firefox
+bash scripts/package.sh linux-x64 webkit
+bash scripts/package.sh linux-x64 all
 ```
 
-By default the package includes Chromium only. Pass a second argument to choose browser assets:
+Windows examples:
 
-```bash
-bash scripts/package.sh osx-arm64 chromium
-bash scripts/package.sh osx-arm64 firefox
-bash scripts/package.sh osx-arm64 webkit
-bash scripts/package.sh osx-arm64 all
+```powershell
+./scripts/package.ps1 -Runtime win-x64 -Browsers chromium
+./scripts/package.ps1 -Runtime win-x64 -Browsers all
 ```
 
-`chrome` is accepted as an alias for `chromium`. `all` packages Chromium, Firefox, and WebKit.
+`chrome` is accepted as an alias for `chromium` by both package scripts.
 
-## Flow Format
+The scripts restore and build the test project, execute the test suite, publish the application, install the selected Playwright browser assets, copy `package-smoke.yaml`, and create the package ZIP.
+
+## Flow format
 
 ```yaml
-specVersion: 1
+specVersion: 2
 name: Example Flow
+reportPath: TestResults/example/results.json
 baseUrl: https://www.saucedemo.com
 browser: chromium
 headless: true
@@ -77,57 +202,26 @@ steps:
 
 Top-level fields:
 
-- `specVersion` - optional flow file spec version. Defaults to `1` when omitted for legacy files. This runner supports spec version `1` and rejects newer versions.
+- `specVersion` - version 1 or 2. Defaults to version 1 when omitted.
 - `name` - display name for the flow.
+- `reportPath` - JSON result path. Optional for version 1 and required for version 2.
 - `baseUrl` - optional base URL used for relative `url` values.
 - `browser` - `chromium`, `firefox`, or `webkit`.
-- `headless` - optional. Must be `true` when present. `headless: false` is rejected because PlaywrightRunner is a CLI-only tool intended for packaged and containerized execution.
+- `headless` - optional. Must be `true` for execution.
 - `userAgent` - optional browser context user agent.
 - `locale` - optional browser context locale, such as `en-US`.
 - `timezoneId` - optional browser context timezone, such as `America/New_York`.
 - `viewport` - optional browser context viewport with `width` and `height`.
-- `extraHttpHeaders` - optional browser context HTTP headers sent with page requests.
+- `extraHttpHeaders` - optional browser context HTTP headers.
 - `steps` - ordered list of actions.
 
-The same fields are supported in JSON:
-
-```json
-{
-  "specVersion": 1,
-  "name": "Example Flow",
-  "baseUrl": "https://www.saucedemo.com",
-  "browser": "chromium",
-  "headless": true,
-  "steps": []
-}
-```
-
-Browser context options can be used when a target site expects a normal browser profile:
-
-```yaml
-specVersion: 1
-name: Search Example
-baseUrl: https://duckduckgo.com
-browser: chromium
-headless: true
-userAgent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
-locale: en-US
-timezoneId: America/New_York
-viewport:
-  width: 1365
-  height: 768
-extraHttpHeaders:
-  accept-language: en-US,en;q=0.9
-steps:
-  - name: Pause after landing
-    action: wait
-    timeoutMs: 1500
-```
+The same fields are supported in JSON.
 
 Common step fields:
 
 - `name` - display name for the step.
 - `action` - action name.
+- `frameSelector` - optional iframe selector used before resolving `selector`.
 - `selector` - element selector for element-based actions.
 - `value` - text, key, option value, or assertion value depending on the action.
 - `values` - list of values for multi-select or multi-file upload.
@@ -150,6 +244,15 @@ selector: ".shopping_cart_badge"
 ```
 
 Anything that does not match a shortcut is passed to Playwright as a normal locator selector.
+
+Use `frameSelector` for elements inside an iframe:
+
+```yaml
+- name: Read application version
+  action: get-text
+  frameSelector: iframe
+  selector: "#versiontext"
+```
 
 ## Actions
 
@@ -195,7 +298,7 @@ Fills an input with `value`.
 
 ### `select`
 
-Selects one or more `<option>` values in a `<select>`.
+Selects one or more `<option>` values.
 
 ```yaml
 - name: Select country
@@ -203,8 +306,6 @@ Selects one or more `<option>` values in a `<select>`.
   selector: "#country"
   value: AU
 ```
-
-For a multi-select:
 
 ```yaml
 - name: Select tags
@@ -215,19 +316,13 @@ For a multi-select:
     - checkout
 ```
 
-### `check`
-
-Checks a checkbox or radio input.
+### `check` and `uncheck`
 
 ```yaml
 - name: Accept terms
   action: check
   selector: "#terms"
 ```
-
-### `uncheck`
-
-Unchecks a checkbox.
 
 ```yaml
 - name: Clear subscription
@@ -236,8 +331,6 @@ Unchecks a checkbox.
 ```
 
 ### `press`
-
-Presses a keyboard key on an element. Use Playwright key names such as `Enter`, `Tab`, `Escape`, or combinations such as `Control+A`.
 
 ```yaml
 - name: Submit search
@@ -248,8 +341,6 @@ Presses a keyboard key on an element. Use Playwright key names such as `Enter`, 
 
 ### `hover`
 
-Moves the mouse over an element.
-
 ```yaml
 - name: Open menu hover state
   action: hover
@@ -258,16 +349,12 @@ Moves the mouse over an element.
 
 ### `upload`
 
-Sets files on a file input. `path` is used for one file.
-
 ```yaml
 - name: Upload avatar
   action: upload
   selector: input[type='file']
   path: fixtures/avatar.png
 ```
-
-Use `values` for multiple files:
 
 ```yaml
 - name: Upload documents
@@ -280,8 +367,6 @@ Use `values` for multiple files:
 
 ### `download`
 
-Clicks an element that triggers a download and saves the file to `path`.
-
 ```yaml
 - name: Download invoice
   action: download
@@ -291,8 +376,6 @@ Clicks an element that triggers a download and saves the file to `path`.
 
 ### `api-request`
 
-Sends an HTTP request through Playwright's API request context. Relative URLs are resolved against `baseUrl`.
-
 ```yaml
 - name: Check health endpoint
   action: api-request
@@ -301,8 +384,6 @@ Sends an HTTP request through Playwright's API request context. Relative URLs ar
   status: 200
   path: TestResults/health.json
 ```
-
-With headers and a body:
 
 ```yaml
 - name: Create record
@@ -316,43 +397,18 @@ With headers and a body:
   path: TestResults/create-record.json
 ```
 
-Fields:
-
-- `method` - HTTP method. Defaults to `GET`.
-- `url` - required.
-- `status` - optional expected response status.
-- `headers` - optional request headers.
-- `data` - optional request body.
-- `path` - optional file path where the response body is written.
-
-### `trace-start`
-
-Starts Playwright tracing for the current browser context. Screenshots, snapshots, and sources are captured.
+### `trace-start` and `trace-stop`
 
 ```yaml
 - name: Start trace
   action: trace-start
-```
 
-### `trace-stop`
-
-Stops tracing and writes a `.zip` trace file.
-
-```yaml
 - name: Stop trace
   action: trace-stop
   path: TestResults/trace.zip
 ```
 
-Open the trace with Playwright tooling:
-
-```bash
-pwsh artifacts/publish/osx-arm64/playwright.ps1 show-trace TestResults/trace.zip
-```
-
 ### `expect-visible`
-
-Asserts that an element is visible.
 
 ```yaml
 - name: Check products title
@@ -362,8 +418,6 @@ Asserts that an element is visible.
 
 ### `expect-text`
 
-Asserts that an element has exact text.
-
 ```yaml
 - name: Check cart badge
   action: expect-text
@@ -371,9 +425,17 @@ Asserts that an element has exact text.
   value: "1"
 ```
 
-### `expect-url`
+### `get-text`
 
-Asserts that the current URL matches a regular expression.
+Reads visible element text and stores it in the JSON result `Data` field.
+
+```yaml
+- name: Read application version
+  action: get-text
+  selector: "#versiontext"
+```
+
+### `expect-url`
 
 ```yaml
 - name: Check inventory URL
@@ -383,8 +445,6 @@ Asserts that the current URL matches a regular expression.
 
 ### `screenshot`
 
-Captures a screenshot.
-
 ```yaml
 - name: Screenshot page
   action: screenshot
@@ -392,9 +452,9 @@ Captures a screenshot.
   fullPage: true
 ```
 
-### `wait`
+The screenshot output path is stored in the JSON result `Data` field and is embedded in generated PDF reports.
 
-Waits for `timeoutMs` milliseconds.
+### `wait`
 
 ```yaml
 - name: Wait briefly
@@ -402,9 +462,9 @@ Waits for `timeoutMs` milliseconds.
   timeoutMs: 500
 ```
 
-## Local Action Fixture
+## Local action fixture
 
-The fixture flow in `src/Tests/fixtures/new-actions.yaml` exercises the new action set.
+The fixture flow in `src/Tests/fixtures/new-actions.yaml` exercises the extended action set.
 
 Start the fixture server:
 

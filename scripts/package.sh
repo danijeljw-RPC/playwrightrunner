@@ -3,6 +3,7 @@ set -euo pipefail
 
 PROJECT="PlaywrightRunner"
 PROJECT_PATH="src/$PROJECT/$PROJECT.csproj"
+TEST_PROJECT_PATH="src/Tests/PlaywrightRunner.Tests/PlaywrightRunner.Tests.csproj"
 FLOW_FILE="package-smoke.yaml"
 CONFIGURATION="Release"
 FRAMEWORK="net10.0"
@@ -61,18 +62,24 @@ if [[ ! -f "$PROJECT_PATH" ]]; then
   exit 2
 fi
 
+if [[ ! -f "$TEST_PROJECT_PATH" ]]; then
+  echo "Test project file not found: $TEST_PROJECT_PATH" >&2
+  exit 2
+fi
+
 echo "Restoring..."
-dotnet restore "$PROJECT_PATH"
+dotnet restore "$TEST_PROJECT_PATH"
 
 echo "Building..."
-dotnet build "$PROJECT_PATH" \
+dotnet build "$TEST_PROJECT_PATH" \
   -c "$CONFIGURATION" \
   --no-restore
 
 echo "Testing..."
-dotnet test "$PROJECT_PATH" \
+dotnet test "$TEST_PROJECT_PATH" \
   -c "$CONFIGURATION" \
-  --no-build
+  --no-build \
+  --no-restore
 
 echo "Publishing..."
 dotnet publish "$PROJECT_PATH" \

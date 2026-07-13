@@ -1,5 +1,20 @@
 # Changelog
 
+## v0.3.0
+
+- Added PDF report generation from one or more existing YAML or JSON flow files.
+- Added repeated `--input` arguments so multiple test flows can be combined in a single ordered PDF report.
+- Added `--output`, `-o`, and `--path` options for selecting the PDF output path.
+- Added a default PDF output path of `TestResults/playwright-report.pdf`.
+- Added an overall report cover, per-flow overview pages, per-step result pages, pass/fail/not-run status, durations, extracted action output, errors, and embedded screenshots.
+- Redacted `fill` values, sensitive API headers, and API request bodies from generated PDF reports.
+- Added support for reading both specification version 1 and specification version 2 result layouts.
+- Restored specification version 1 compatibility for legacy flows and flows without an explicit `specVersion`.
+- Required `reportPath` for specification version 2 flows.
+- Separated flow parsing from execution-only validation so historical result files can still be reported.
+- Corrected packaging scripts to restore, build, and run the actual test project.
+- Added CLI parsing, flow compatibility, report aggregation, screenshot resolution, and PDF generation tests.
+
 ## v0.2.0
 
 - Added CLI help output with `-h` and `--help`.
@@ -17,4 +32,4 @@
 
 ## v0.1.0
 
-- Initial release
+- Initial release.

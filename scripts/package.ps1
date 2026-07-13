@@ -12,6 +12,7 @@ $ErrorActionPreference = "Stop"
 
 $Project = "PlaywrightRunner"
 $ProjectPath = "src\${Project}\${Project}.csproj"
+$TestProjectPath = "src\Tests\PlaywrightRunner.Tests\PlaywrightRunner.Tests.csproj"
 $FlowFile = "package-smoke.yaml"
 $Configuration = "Release"
 $Framework = "net10.0"
@@ -67,6 +68,11 @@ if (-not (Test-Path $ProjectPath)) {
     exit 2
 }
 
+if (-not (Test-Path $TestProjectPath)) {
+    Write-Error "Test project file not found: $TestProjectPath"
+    exit 2
+}
+
 # Important: do NOT remove $OutputRoot here.
 # $ZipDir lives under $OutputRoot, so deleting $OutputRoot on every run
 # deletes ZIPs created by previous matrix iterations.
@@ -78,17 +84,18 @@ New-Item -ItemType Directory -Path $PublishDir -Force | Out-Null
 New-Item -ItemType Directory -Path $ZipDir -Force | Out-Null
 
 Write-Host "Restoring..."
-dotnet restore $ProjectPath
+dotnet restore $TestProjectPath
 
 Write-Host "Building..."
-dotnet build $ProjectPath `
+dotnet build $TestProjectPath `
     -c $Configuration `
     --no-restore
 
 Write-Host "Testing..."
-dotnet test $ProjectPath `
+dotnet test $TestProjectPath `
     -c $Configuration `
-    --no-build
+    --no-build `
+    --no-restore
 
 Write-Host "Publishing..."
 dotnet publish $ProjectPath `
@@ -101,6 +108,7 @@ dotnet publish $ProjectPath `
     /p:PublishTrimmed=false
 
 Write-Host "Installing bundled Playwright browsers: $($PlaywrightBrowsers -join ' ')"
+$PreviousPlaywrightBrowsersPath = $env:PLAYWRIGHT_BROWSERS_PATH
 Push-Location $PublishDir
 try {
     if (-not (Test-Path ".\playwright.ps1")) {
@@ -108,7 +116,6 @@ try {
         exit 2
     }
 
-    $PreviousPlaywrightBrowsersPath = $env:PLAYWRIGHT_BROWSERS_PATH
     $env:PLAYWRIGHT_BROWSERS_PATH = Join-Path (Get-Location) "ms-playwright"
 
     & ".\playwright.ps1" install @PlaywrightBrowsers

@@ -51,7 +51,9 @@ public sealed class FlowRunner
             }
         }
 
-        await _reportWriter.WriteAsync(results, flow.ReportPath);
+        await _reportWriter.WriteAsync(
+            results,
+            FlowResultPathResolver.Resolve(flow));
 
         return results.All(x => x.Passed) ? 0 : 1;
     }
@@ -68,7 +70,6 @@ public sealed class FlowRunner
             var data = await _stepExecutor.RunAsync(page, flow, step);
 
             sw.Stop();
-
             Console.WriteLine($"PASS {step.Name} ({sw.ElapsedMilliseconds}ms)");
 
             return new StepResult

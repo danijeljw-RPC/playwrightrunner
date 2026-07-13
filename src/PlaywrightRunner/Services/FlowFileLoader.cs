@@ -7,36 +7,67 @@ namespace PlaywrightRunner.Services;
 
 public static class FlowFileLoader
 {
-    private const int CurrentSpecVersion = 2;
-
     public static FlowDefinition Load(string path)
     {
+        var flow = Parse(path);
+        ValidateForExecution(flow);
+        return flow;
+    }
+
+    public static FlowDefinition Parse(string path)
+    {
+        if (!File.Exists(path))
+            throw new FileNotFoundException("Flow file was not found.", path);
+
         var text = File.ReadAllText(path);
         var extension = Path.GetExtension(path).ToLowerInvariant();
 
-        FlowDefinition? flow;
-
-        if (extension is ".yaml" or ".yml")
+        FlowDefinition? flow = extension switch
         {
-            var deserializer = new DeserializerBuilder()
-                .WithNamingConvention(CamelCaseNamingConvention.Instance)
-                .Build();
-
-            flow = deserializer.Deserialize<FlowDefinition>(text);
-        }
-        else
-        {
-            flow = JsonSerializer.Deserialize<FlowDefinition>(
-                text,
-                new JsonSerializerOptions
-                {
-                    PropertyNameCaseInsensitive = true
-                });
-        }
+            ".yaml" or ".yml" => ParseYaml(text),
+            ".json" => ParseJson(text),
+            _ => throw new InvalidOperationException(
+                "Flow files must use the .yaml, .yml, or .json extension.")
+        };
 
         if (flow is null)
             throw new InvalidOperationException("Could not parse flow file.");
 
+        ValidateSupportedVersion(flow);
+        return flow;
+    }
+
+    public static void ValidateForExecution(FlowDefinition flow)
+    {
+        ValidateSupportedVersion(flow);
+        FlowResultPathResolver.Resolve(flow);
+
+        if (!flow.Headless)
+        {
+            throw new InvalidOperationException(
+                "headless: false is not supported. PlaywrightRunner is a CLI-only tool and always runs browsers headlessly.");
+        }
+    }
+
+    private static FlowDefinition? ParseYaml(string text)
+    {
+        var deserializer = new DeserializerBuilder()
+            .WithNamingConvention(CamelCaseNamingConvention.Instance)
+            .Build();
+
+        return deserializer.Deserialize<FlowDefinition>(text);
+    }
+
+    private static FlowDefinition? ParseJson(string text) =>
+        JsonSerializer.Deserialize<FlowDefinition>(
+            text,
+            new JsonSerializerOptions
+            {
+                PropertyNameCaseInsensitive = true
+            });
+
+    private static void ValidateSupportedVersion(FlowDefinition flow)
+    {
         if (flow.SpecVersion < FlowSpecification.MinimumSupportedVersion)
         {
             throw new InvalidOperationException(
@@ -48,15 +79,7 @@ public static class FlowFileLoader
             throw new InvalidOperationException(
                 $"specVersion {flow.SpecVersion} is not supported. " +
                 $"The latest supported version is {FlowSpecification.CurrentVersion}.\n" +
-                $"Get latest version from: https://github.com/danijeljw-RPC/playwrightrunner/releases/latest");
+                "Get the latest version from: https://github.com/danijeljw-RPC/playwrightrunner/releases/latest");
         }
-
-        if (!flow.Headless)
-        {
-            throw new InvalidOperationException(
-                "headless: false is not supported. PlaywrightRunner is a CLI-only tool and always runs browsers headlessly.");
-        }
-
-        return flow;
     }
 }
