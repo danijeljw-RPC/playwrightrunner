@@ -5,6 +5,7 @@ public sealed class FlowStep
     public string Name { get; set; } = "Unnamed Step";
     public string Action { get; set; } = "";
     public string? Url { get; set; }
+    public string? FrameSelector { get; set; }
     public string? Selector { get; set; }
     public string? Value { get; set; }
     public List<string>? Values { get; set; }

@@ -480,3 +480,9 @@ $RECYCLE.BIN/
 
 # Vim temporary swap files
 *.swp
+
+# Other files
+*_uat.yaml
+*_prod.yaml
+*_dev.yaml
+*_preprod.yaml
