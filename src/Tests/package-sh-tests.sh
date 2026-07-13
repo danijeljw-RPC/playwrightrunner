@@ -11,9 +11,9 @@ fail() {
 make_test_repo() {
   local work_dir="$1"
 
-  mkdir -p "$work_dir/scripts" "$work_dir/src/PlaywrightRunner" "$work_dir/fake-bin"
+  mkdir -p "$work_dir/scripts" "$work_dir/src/ScriptTrail" "$work_dir/fake-bin"
   cp "$ROOT_DIR/scripts/package.sh" "$work_dir/scripts/package.sh"
-  touch "$work_dir/src/PlaywrightRunner/PlaywrightRunner.csproj"
+  touch "$work_dir/src/ScriptTrail/ScriptTrail.csproj"
   printf 'flow: test\n' > "$work_dir/saucedemo.yaml"
   printf 'flow: smoke\n' > "$work_dir/package-smoke.yaml"
 
@@ -30,7 +30,7 @@ if [[ "${1:-}" == "publish" ]]; then
     shift
   done
   mkdir -p "$out_dir"
-  touch "$out_dir/PlaywrightRunner"
+  touch "$out_dir/ScriptTrail"
   printf 'install script\n' > "$out_dir/playwright.ps1"
 fi
 STUB
@@ -73,17 +73,17 @@ trap 'rm -rf "$tmp_dir"' EXIT
 repo_one="$tmp_dir/chrome-default"
 make_test_repo "$repo_one"
 run_package "$repo_one" osx-arm64
-assert_file_exists "$repo_one/artifacts/zips/PlaywrightRunner-osx-arm64-chrome.zip"
+assert_file_exists "$repo_one/artifacts/zips/ScriptTrail-osx-arm64-chrome.zip"
 assert_file_exists "$repo_one/artifacts/publish/osx-arm64-chrome/package-smoke.yaml"
 
 repo_two="$tmp_dir/chromium-alias"
 make_test_repo "$repo_two"
 run_package "$repo_two" osx-arm64 chromium
-assert_file_exists "$repo_two/artifacts/zips/PlaywrightRunner-osx-arm64-chrome.zip"
+assert_file_exists "$repo_two/artifacts/zips/ScriptTrail-osx-arm64-chrome.zip"
 
 repo_three="$tmp_dir/all-tagged"
 make_test_repo "$repo_three"
 run_package "$repo_three" linux-x64 all v1.2.3
-assert_file_exists "$repo_three/artifacts/zips/PlaywrightRunner-linux-x64-all-v1.2.3.zip"
+assert_file_exists "$repo_three/artifacts/zips/ScriptTrail-linux-x64-all-v1.2.3.zip"
 
 echo "package.sh naming tests passed"

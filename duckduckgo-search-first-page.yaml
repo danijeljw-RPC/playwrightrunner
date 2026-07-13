@@ -23,7 +23,7 @@ steps:
   - name: Search DuckDuckGo
     action: fill
     selector: input[name='q']
-    value: PlaywrightRunner GitHub
+    value: ScriptTrail GitHub
 
   - name: Pause before submit
     action: wait
@@ -40,7 +40,7 @@ steps:
 
   - name: Confirm search results URL
     action: expect-url
-    value: .*duckduckgo\.com.*q=PlaywrightRunner.*
+    value: .*duckduckgo\.com.*q=ScriptTrail.*
 
   - name: Screenshot first page of results
     action: screenshot

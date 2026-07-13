@@ -1,11 +1,11 @@
-# PlaywrightRunner
+# ScriptTrail
 
 Runs Playwright browser flows from YAML or JSON files and generates JSON execution results. Existing results from one or more flows can be combined into a simple PDF report with embedded screenshots.
 
 ## Project layout
 
-- `src/PlaywrightRunner/` - application source code
-- `src/Tests/PlaywrightRunner.Tests/` - unit and CLI tests
+- `src/ScriptTrail/` - application source code
+- `src/Tests/ScriptTrail.Tests/` - unit and CLI tests
 - `scripts/package.sh` - macOS/Linux packaging
 - `scripts/package.ps1` - Windows packaging
 - `package-smoke.yaml` - deterministic self-contained packaged smoke flow
@@ -15,13 +15,13 @@ Runs Playwright browser flows from YAML or JSON files and generates JSON executi
 ## Run a flow
 
 ```bash
-PlaywrightRunner saucedemo.yaml
+ScriptTrail saucedemo.yaml
 ```
 
 From source:
 
 ```bash
-dotnet run --project src/PlaywrightRunner/PlaywrightRunner.csproj -- saucedemo.yaml
+dotnet run --project src/ScriptTrail/ScriptTrail.csproj -- saucedemo.yaml
 ```
 
 A flow executes its steps in order. Execution stops after the first failed step. The JSON result path is determined by the flow specification version.
@@ -31,7 +31,7 @@ A flow executes its steps in order. Execution stops after the first failed step.
 Generate a report from a single flow:
 
 ```bash
-PlaywrightRunner --report --input saucedemo.yaml
+ScriptTrail --report --input saucedemo.yaml
 ```
 
 The default output is:
@@ -44,7 +44,7 @@ The default cover title is `Playwright Test Report`. Set a custom title with
 `--report-name`:
 
 ```bash
-PlaywrightRunner --report \
+ScriptTrail --report \
   --report-name "Manhattan Test Report" \
   --input manhattan_qgao_uat.yaml
 ```
@@ -52,7 +52,7 @@ PlaywrightRunner --report \
 Choose an output path:
 
 ```bash
-PlaywrightRunner \
+ScriptTrail \
   --report \
   --output TestResults/saucedemo-report.pdf \
   --input saucedemo.yaml
@@ -61,7 +61,7 @@ PlaywrightRunner \
 Combine multiple flows in the order supplied:
 
 ```bash
-PlaywrightRunner \
+ScriptTrail \
   --report \
   --output TestResults/combined-report.pdf \
   --input saucedemo.yaml \
@@ -71,7 +71,7 @@ PlaywrightRunner \
 Equals syntax is also supported:
 
 ```bash
-PlaywrightRunner --report \
+ScriptTrail --report \
   --output=TestResults/combined-report.pdf \
   --input=saucedemo.yaml \
   --input=app_uat_2.yaml
@@ -80,7 +80,7 @@ PlaywrightRunner --report \
 `--path` is accepted as an alias for `--output`:
 
 ```bash
-PlaywrightRunner --report --path=TestResults/report.pdf --input=flow.yaml
+ScriptTrail --report --path=TestResults/report.pdf --input=flow.yaml
 ```
 
 The PDF contains:
@@ -148,8 +148,8 @@ If execution stopped after a failed step, remaining YAML steps are included in t
 
 ```text
 Usage:
-  PlaywrightRunner <flow.json|flow.yaml>
-  PlaywrightRunner --report [--output <report.pdf>] [--report-name <name>] --input <flow.yaml> [--input <flow.yaml> ...]
+  ScriptTrail <flow.json|flow.yaml>
+  ScriptTrail --report [--output <report.pdf>] [--report-name <name>] --input <flow.yaml> [--input <flow.yaml> ...]
 
 Options:
   -h, --help            Show help.
@@ -485,5 +485,5 @@ python3 -m http.server 8765 --directory src/Tests/fixtures
 Run the fixture:
 
 ```bash
-dotnet run --project src/PlaywrightRunner/PlaywrightRunner.csproj -- src/Tests/fixtures/new-actions.yaml
+dotnet run --project src/ScriptTrail/ScriptTrail.csproj -- src/Tests/fixtures/new-actions.yaml
 ```

@@ -23,7 +23,7 @@ steps:
   - name: Search Google
     action: fill
     selector: textarea[name='q']
-    value: PlaywrightRunner GitHub
+    value: ScriptTrail GitHub
 
   - name: Pause before submit
     action: wait

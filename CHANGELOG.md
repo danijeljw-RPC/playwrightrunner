@@ -6,9 +6,6 @@
 - Updated the Manhattan suite script to generate reports titled `Manhattan Test Report`.
 - Fixed QuestPDF footer styling compatibility with QuestPDF 2026.7.1.
 - Added a fallback from invalid `PLAYWRIGHT_DRIVER_SEARCH_PATH` overrides to the bundled Playwright driver.
-
-## v0.3.0
-
 - Added PDF report generation from one or more existing YAML or JSON flow files.
 - Added repeated `--input` arguments so multiple test flows can be combined in a single ordered PDF report.
 - Added `--output`, `-o`, and `--path` options for selecting the PDF output path.

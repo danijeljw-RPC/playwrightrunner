@@ -36,6 +36,19 @@ jobs:
             exit 1
           fi
 
+      - name: Require matching changelog section
+        shell: bash
+        run: |
+          notes="$(bash scripts/extract-release-notes.sh "$GITHUB_REF_NAME")" || {
+            echo "CHANGELOG.md must contain a section named ## $GITHUB_REF_NAME" >&2
+            exit 1
+          }
+
+          if [[ -z "${notes//[[:space:]]/}" ]]; then
+            echo "The ## $GITHUB_REF_NAME section in CHANGELOG.md must not be empty." >&2
+            exit 1
+          fi
+
   build:
     name: Build ${{ matrix.runtime.name }} ${{ matrix.browser }}
     needs: validate-tag
@@ -75,7 +88,7 @@ jobs:
       - name: Upload package
         uses: actions/upload-artifact@v7
         with:
-          name: PlaywrightRunner-${{ matrix.runtime.name }}-${{ matrix.browser }}-${{ github.ref_name }}
+          name: ScriptTrail-${{ matrix.runtime.name }}-${{ matrix.browser }}-${{ github.ref_name }}
           path: artifacts/zips/*.zip
           if-no-files-found: error
 
@@ -84,16 +97,17 @@ jobs:
     needs: build
     runs-on: ubuntu-latest
     steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
       - name: Download packages
         uses: actions/download-artifact@v8
         with:
           path: artifacts/zips
           merge-multiple: true
 
-      - name: Create GitHub release
+      - name: Generate SHA-256 manifest
         shell: bash
-        env:
-          GH_TOKEN: ${{ github.token }}
         run: |
           shopt -s nullglob
           files=(artifacts/zips/*.zip)
@@ -103,7 +117,30 @@ jobs:
             exit 1
           fi
 
+          (
+            cd artifacts/zips
+            sha256sum -- *.zip > SHA256SUMS
+          )
+
+      - name: Extract release notes from changelog
+        shell: bash
+        run: bash scripts/extract-release-notes.sh "$GITHUB_REF_NAME" > release-notes.md
+
+      - name: Create GitHub release
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          shopt -s nullglob
+          files=(artifacts/zips/*.zip artifacts/zips/SHA256SUMS)
+
+          if (( ${#files[@]} < 2 )); then
+            echo "ZIP packages or SHA256SUMS are missing." >&2
+            exit 1
+          fi
+
           gh release create "$GITHUB_REF_NAME" "${files[@]}" \
             --repo "$GITHUB_REPOSITORY" \
             --title "$GITHUB_REF_NAME" \
+            --notes-file release-notes.md \
             --verify-tag
