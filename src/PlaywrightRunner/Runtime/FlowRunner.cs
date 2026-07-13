@@ -65,7 +65,7 @@ public sealed class FlowRunner
 
         try
         {
-            await _stepExecutor.RunAsync(page, flow, step);
+            var data = await _stepExecutor.RunAsync(page, flow, step);
 
             sw.Stop();
 
@@ -76,7 +76,8 @@ public sealed class FlowRunner
                 Name = step.Name,
                 Action = step.Action,
                 Passed = true,
-                DurationMs = sw.ElapsedMilliseconds
+                DurationMs = sw.ElapsedMilliseconds,
+                Data = data
             };
         }
         catch (Exception ex)

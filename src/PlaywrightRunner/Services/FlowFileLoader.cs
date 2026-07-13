@@ -47,7 +47,8 @@ public static class FlowFileLoader
         {
             throw new InvalidOperationException(
                 $"specVersion {flow.SpecVersion} is not supported. " +
-                $"The latest supported version is {FlowSpecification.CurrentVersion}.");
+                $"The latest supported version is {FlowSpecification.CurrentVersion}.\n" +
+                $"Get latest version from: https://github.com/danijeljw-RPC/playwrightrunner/releases/latest");
         }
 
         if (!flow.Headless)

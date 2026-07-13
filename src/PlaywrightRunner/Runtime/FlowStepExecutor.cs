@@ -13,8 +13,13 @@ public sealed class FlowStepExecutor
         _selectorResolver = selectorResolver;
     }
 
-    public async Task RunAsync(IPage page, FlowDefinition flow, FlowStep step)
+    public async Task<string?> RunAsync(
+        IPage page,
+        FlowDefinition flow,
+        FlowStep step)
     {
+        string? data = null;
+
         switch (step.Action.ToLowerInvariant())
         {
             case "goto":
@@ -78,7 +83,7 @@ public sealed class FlowStepExecutor
                 break;
 
             case "get-text":
-                await GetTextAsync(page, step);
+                data = await GetTextAsync(page, step);
                 break;
 
             case "expect-url":
@@ -86,7 +91,7 @@ public sealed class FlowStepExecutor
                 break;
 
             case "screenshot":
-                await ScreenshotAsync(page, step);
+                data = await ScreenshotAsync(page, step);
                 break;
 
             case "wait":
@@ -94,8 +99,11 @@ public sealed class FlowStepExecutor
                 break;
 
             default:
-                throw new InvalidOperationException($"Unsupported action: {step.Action}");
+                throw new InvalidOperationException(
+                    $"Unsupported action: {step.Action}");
         }
+
+        return data;
     }
 
     private static async Task GotoAsync(IPage page, FlowDefinition flow, FlowStep step)
@@ -278,7 +286,9 @@ public sealed class FlowStepExecutor
         });
     }
 
-    private async Task GetTextAsync(IPage page, FlowStep step)
+    private async Task<string> GetTextAsync(
+        IPage page,
+        FlowStep step)
     {
         var locator = _selectorResolver.Resolve(page, step);
 
@@ -291,6 +301,8 @@ public sealed class FlowStepExecutor
         var text = (await locator.InnerTextAsync()).Trim();
 
         Console.WriteLine($"     {step.Name}: {text}");
+
+        return text;
     }
 
     private static async Task ExpectUrlAsync(IPage page, FlowStep step)
@@ -306,12 +318,13 @@ public sealed class FlowStepExecutor
             });
     }
 
-    private static async Task ScreenshotAsync(IPage page, FlowStep step)
+    private static async Task<string> ScreenshotAsync(
+        IPage page,
+        FlowStep step)
     {
         var path = step.Path
-            ?? throw new InvalidOperationException("screenshot requires path.");
-
-        var dir = Path.GetDirectoryName(path);
+            ?? throw new InvalidOperationException(
+                "screenshot requires path.");
 
         EnsureDirectory(path);
 
@@ -320,6 +333,8 @@ public sealed class FlowStepExecutor
             Path = path,
             FullPage = step.FullPage
         });
+
+        return path;
     }
 
     private static string ResolveUrl(FlowDefinition flow, string url)
