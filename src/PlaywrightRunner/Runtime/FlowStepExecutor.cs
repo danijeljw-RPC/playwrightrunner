@@ -77,6 +77,10 @@ public sealed class FlowStepExecutor
                 await ExpectTextAsync(page, step);
                 break;
 
+            case "get-text":
+                await GetTextAsync(page, step);
+                break;
+
             case "expect-url":
                 await ExpectUrlAsync(page, step);
                 break;
@@ -272,6 +276,21 @@ public sealed class FlowStepExecutor
         {
             Timeout = step.TimeoutMs
         });
+    }
+
+    private async Task GetTextAsync(IPage page, FlowStep step)
+    {
+        var locator = _selectorResolver.Resolve(page, step);
+
+        await locator.WaitForAsync(new()
+        {
+            State = WaitForSelectorState.Visible,
+            Timeout = step.TimeoutMs
+        });
+
+        var text = (await locator.InnerTextAsync()).Trim();
+
+        Console.WriteLine($"     {step.Name}: {text}");
     }
 
     private static async Task ExpectUrlAsync(IPage page, FlowStep step)
