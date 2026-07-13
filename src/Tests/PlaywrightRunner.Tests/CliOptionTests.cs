@@ -70,6 +70,8 @@ public sealed class CliOptionTests
 
         var result = await RunCliAsync(
             "--report",
+            "--report-name",
+            "CLI Test Report",
             "--output",
             outputPath,
             "--input",

@@ -56,12 +56,7 @@ public sealed class CliApplication
             return 2;
         }
 
-        var appDir = AppContext.BaseDirectory;
-        var browserDir = Path.Combine(appDir, "ms-playwright");
-
-        Environment.SetEnvironmentVariable(
-            "PLAYWRIGHT_BROWSERS_PATH",
-            browserDir);
+        PlaywrightEnvironment.Configure(AppContext.BaseDirectory);
 
         var runner = new FlowRunner(
             new BrowserFactory(),
@@ -76,7 +71,10 @@ public sealed class CliApplication
         try
         {
             var report = new FlowReportLoader().Load(options.InputPaths);
-            var outputPath = new PdfReportWriter().Write(report, options.OutputPath!);
+            var outputPath = new PdfReportWriter().Write(
+                report,
+                options.OutputPath!,
+                options.ReportName!);
 
             Console.WriteLine($"PDF report written: {outputPath}");
             return 0;

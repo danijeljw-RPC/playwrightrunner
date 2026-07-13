@@ -1,4 +1,5 @@
 using PlaywrightRunner.Cli;
+using PlaywrightRunner.Reporting;
 using Xunit;
 
 namespace PlaywrightRunner.Tests;
@@ -53,6 +54,47 @@ public sealed class CliOptionsParserTests
         Assert.Equal(
             CliOptionsParser.DefaultReportOutputPath,
             result.Options!.OutputPath);
+        Assert.Equal(PdfReportWriter.DefaultReportName, result.Options.ReportName);
+    }
+
+    [Theory]
+    [InlineData("--report-name", "Custom Test Report")]
+    [InlineData("--report-name=Custom Test Report", null)]
+    public void Parse_AcceptsCustomReportName(string option, string? value)
+    {
+        var arguments = value is null
+            ? new[] { "--report", option, "--input", "flow.yaml" }
+            : new[] { "--report", option, value, "--input", "flow.yaml" };
+
+        var result = CliOptionsParser.Parse(arguments);
+
+        Assert.True(result.Success);
+        Assert.Equal("Custom Test Report", result.Options!.ReportName);
+    }
+
+    [Fact]
+    public void Parse_RejectsReportNameWithoutValue()
+    {
+        var result = CliOptionsParser.Parse(
+            ["--report", "--report-name", "--input", "flow.yaml"]);
+
+        Assert.False(result.Success);
+        Assert.Contains("requires a value", result.Error);
+    }
+
+    [Fact]
+    public void Parse_RejectsDuplicateReportName()
+    {
+        var result = CliOptionsParser.Parse(
+            [
+                "--report",
+                "--report-name=First",
+                "--report-name=Second",
+                "--input=flow.yaml"
+            ]);
+
+        Assert.False(result.Success);
+        Assert.Contains("only once", result.Error);
     }
 
     [Fact]

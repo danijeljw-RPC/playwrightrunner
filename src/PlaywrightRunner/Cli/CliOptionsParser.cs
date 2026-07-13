@@ -1,3 +1,5 @@
+using PlaywrightRunner.Reporting;
+
 namespace PlaywrightRunner.Cli;
 
 public static class CliOptionsParser
@@ -8,12 +10,13 @@ public static class CliOptionsParser
         """
         Usage:
           PlaywrightRunner <flow.json|flow.yaml>
-          PlaywrightRunner --report [--output <report.pdf>] --input <flow.yaml> [--input <flow.yaml> ...]
+          PlaywrightRunner --report [--output <report.pdf>] [--report-name <name>] --input <flow.yaml> [--input <flow.yaml> ...]
 
         Options:
           -h, --help            Show help.
           -v, --version         Print version number.
           --report              Generate a PDF report from existing flow result files.
+          --report-name         Cover title. Defaults to Playwright Test Report.
           -o, --output, --path  PDF output path. Defaults to TestResults/playwright-report.pdf.
           -i, --input           Flow YAML or JSON file. Repeat for multiple report sections.
 
@@ -48,6 +51,8 @@ public static class CliOptionsParser
 
         var outputPath = DefaultReportOutputPath;
         var outputSpecified = false;
+        var reportName = PdfReportWriter.DefaultReportName;
+        var reportNameSpecified = false;
         var inputPaths = new List<string>();
 
         for (var index = 1; index < args.Count; index++)
@@ -101,6 +106,33 @@ public static class CliOptionsParser
                 continue;
             }
 
+            if (TryReadInline(argument, "--report-name", out var inlineReportName))
+            {
+                if (reportNameSpecified)
+                    return CliParseResult.Failed("Specify the report name only once.");
+
+                if (string.IsNullOrWhiteSpace(inlineReportName))
+                    return CliParseResult.Failed("--report-name requires a value.");
+
+                reportName = inlineReportName;
+                reportNameSpecified = true;
+                continue;
+            }
+
+            if (Is(argument, "--report-name"))
+            {
+                if (reportNameSpecified)
+                    return CliParseResult.Failed("Specify the report name only once.");
+
+                var read = ReadNext(args, ref index, argument);
+                if (!read.Success)
+                    return CliParseResult.Failed(read.Error!);
+
+                reportName = read.Value!;
+                reportNameSpecified = true;
+                continue;
+            }
+
             return CliParseResult.Failed($"Unknown report option: {argument}");
         }
 
@@ -111,7 +143,7 @@ public static class CliOptionsParser
             return CliParseResult.Failed("The report output path must use the .pdf extension.");
 
         return CliParseResult.Parsed(
-            CliOptions.GenerateReport(outputPath, inputPaths));
+            CliOptions.GenerateReport(outputPath, reportName, inputPaths));
     }
 
     private static (bool Success, string? Value, string? Error) ReadNext(

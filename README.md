@@ -40,6 +40,15 @@ The default output is:
 TestResults/playwright-report.pdf
 ```
 
+The default cover title is `Playwright Test Report`. Set a custom title with
+`--report-name`:
+
+```bash
+PlaywrightRunner --report \
+  --report-name "Manhattan Test Report" \
+  --input manhattan_qgao_uat.yaml
+```
+
 Choose an output path:
 
 ```bash
@@ -140,12 +149,13 @@ If execution stopped after a failed step, remaining YAML steps are included in t
 ```text
 Usage:
   PlaywrightRunner <flow.json|flow.yaml>
-  PlaywrightRunner --report [--output <report.pdf>] --input <flow.yaml> [--input <flow.yaml> ...]
+  PlaywrightRunner --report [--output <report.pdf>] [--report-name <name>] --input <flow.yaml> [--input <flow.yaml> ...]
 
 Options:
   -h, --help            Show help.
   -v, --version         Print version number.
   --report              Generate a PDF report from existing flow result files.
+  --report-name         Cover title. Defaults to Playwright Test Report.
   -o, --output, --path  PDF output path. Defaults to TestResults/playwright-report.pdf.
   -i, --input           Flow YAML or JSON file. Repeat for multiple report sections.
 ```

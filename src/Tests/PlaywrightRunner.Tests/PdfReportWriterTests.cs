@@ -64,6 +64,12 @@ public sealed class PdfReportWriterTests
         Assert.Equal(Path.GetFullPath(outputPath), writtenPath);
         Assert.True(new FileInfo(outputPath).Length > 1_000);
         Assert.Equal("%PDF", await ReadPrefixAsync(outputPath, 4));
+
+        var customOutputPath = Path.Combine(root, "custom-report.pdf");
+        new PdfReportWriter().Write(report, customOutputPath, "Custom Test Report");
+
+        Assert.False(File.ReadAllBytes(outputPath).SequenceEqual(
+            File.ReadAllBytes(customOutputPath)));
     }
 
     private static async Task<string> ReadPrefixAsync(string path, int length)

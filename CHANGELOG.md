@@ -1,5 +1,12 @@
 # Changelog
 
+## Unreleased
+
+- Added `--report-name` to customize the PDF cover title while retaining `Playwright Test Report` as the default.
+- Updated the Manhattan suite script to generate reports titled `Manhattan Test Report`.
+- Fixed QuestPDF footer styling compatibility with QuestPDF 2026.7.1.
+- Added a fallback from invalid `PLAYWRIGHT_DRIVER_SEARCH_PATH` overrides to the bundled Playwright driver.
+
 ## v0.3.0
 
 - Added PDF report generation from one or more existing YAML or JSON flow files.

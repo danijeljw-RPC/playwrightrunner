@@ -6,13 +6,20 @@ namespace PlaywrightRunner.Reporting;
 
 public sealed class PdfReportWriter
 {
+    public const string DefaultReportName = "Playwright Test Report";
+
     private const string TextColor = "#111827";
     private const string MutedColor = "#6B7280";
     private const string BorderColor = "#D1D5DB";
     private const string PanelColor = "#F3F4F6";
 
-    public string Write(TestReport report, string outputPath)
+    public string Write(
+        TestReport report,
+        string outputPath,
+        string reportName = DefaultReportName)
     {
+        ArgumentException.ThrowIfNullOrWhiteSpace(reportName);
+
         var fullOutputPath = Path.GetFullPath(outputPath);
         var directory = Path.GetDirectoryName(fullOutputPath);
 
@@ -23,7 +30,7 @@ public sealed class PdfReportWriter
 
         Document.Create(document =>
         {
-            AddOverallCover(document, report);
+            AddOverallCover(document, report, reportName);
 
             foreach (var flow in report.Flows)
             {
@@ -39,7 +46,8 @@ public sealed class PdfReportWriter
 
     private static void AddOverallCover(
         IDocumentContainer document,
-        TestReport report)
+        TestReport report,
+        string reportName)
     {
         document.Page(page =>
         {
@@ -52,7 +60,7 @@ public sealed class PdfReportWriter
                     column.Spacing(14);
 
                     column.Item()
-                        .Text("Playwright Test Report")
+                        .Text(reportName)
                         .FontSize(30)
                         .Bold()
                         .FontColor(TextColor);
@@ -336,15 +344,16 @@ public sealed class PdfReportWriter
     {
         container
             .AlignCenter()
+            .DefaultTextStyle(style => style
+                .FontSize(9)
+                .FontColor(MutedColor))
             .Text(text =>
             {
                 text.Span("Page ");
                 text.CurrentPageNumber();
                 text.Span(" of ");
                 text.TotalPages();
-            })
-            .FontSize(9)
-            .FontColor(MutedColor);
+            });
     }
 
     private static string OverallStatus(int failedCount, int notRunCount)
