@@ -44,8 +44,8 @@ public sealed class StepRequirementFormatterTests
                 Data = "{\"password\":\"secret\"}"
             });
 
-        var headers = Assert.Single(fields.Where(field => field.Label == "Headers"));
-        var body = Assert.Single(fields.Where(field => field.Label == "Request body"));
+        var headers = Assert.Single(fields, field => field.Label == "Headers");
+        var body = Assert.Single(fields, field => field.Label == "Request body");
 
         Assert.Contains("Authorization: [redacted]", headers.Value);
         Assert.Contains("content-type: application/json", headers.Value);
@@ -67,7 +67,7 @@ public sealed class StepRequirementFormatterTests
                 Url = "/page"
             });
 
-        var url = Assert.Single(fields.Where(field => field.Label == "URL"));
+        var url = Assert.Single(fields, field => field.Label == "URL");
 
         Assert.Equal("https://example.com/root/page", url.Value);
     }
