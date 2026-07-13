@@ -1,4 +1,4 @@
-namespace PlaywrightRunner.Models;
+namespace ScriptTrail.Models;
 
 public sealed class FlowStep
 {

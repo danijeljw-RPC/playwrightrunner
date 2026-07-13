@@ -1,10 +1,10 @@
-namespace PlaywrightRunner.Models;
+namespace ScriptTrail.Models;
 
 public sealed class FlowDefinition
 {
-    public int SpecVersion { get; set; } = FlowSpecification.CurrentVersion;
+    public int SpecVersion { get; set; } = FlowSpecification.LegacyVersion;
     public string Name { get; set; } = "Unnamed Flow";
-    public string ReportPath { get; set; } = "TestResults/report.json";
+    public string? ReportPath { get; set; }
     public string? BaseUrl { get; set; }
     public string Browser { get; set; } = "chromium";
     public bool Headless { get; set; } = true;

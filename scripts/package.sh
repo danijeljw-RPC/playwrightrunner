@@ -1,8 +1,9 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-PROJECT="PlaywrightRunner"
+PROJECT="ScriptTrail"
 PROJECT_PATH="src/$PROJECT/$PROJECT.csproj"
+TEST_PROJECT_PATH="src/Tests/ScriptTrail.Tests/ScriptTrail.Tests.csproj"
 FLOW_FILE="package-smoke.yaml"
 CONFIGURATION="Release"
 FRAMEWORK="net10.0"
@@ -10,6 +11,15 @@ RUNTIME="${1:-osx-arm64}"
 BROWSERS="${2:-chromium}"
 VERSION_SUFFIX="${3:-${PACKAGE_VERSION:-}}"
 BROWSERS_NORMALIZED="$(printf '%s' "$BROWSERS" | tr '[:upper:]' '[:lower:]')"
+PACKAGE_VERSION=""
+
+if [[ -n "$VERSION_SUFFIX" ]]; then
+  PACKAGE_VERSION="${VERSION_SUFFIX#v}"
+  if [[ ! "$PACKAGE_VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+    echo "Package version must match vX.Y.Z or X.Y.Z: $VERSION_SUFFIX" >&2
+    exit 2
+  fi
+fi
 
 OUTPUT_ROOT="artifacts"
 PUBLISH_ROOT="$OUTPUT_ROOT/publish"
@@ -49,6 +59,9 @@ ZIP_FILE="$ZIP_DIR/$ZIP_BASENAME.zip"
 
 echo "Runtime: $RUNTIME"
 echo "Browsers: $BROWSERS"
+if [[ -n "$PACKAGE_VERSION" ]]; then
+  echo "Version: $PACKAGE_VERSION"
+fi
 
 echo "Cleaning publish directory for current package..."
 rm -rf "$PUBLISH_DIR"
@@ -61,20 +74,36 @@ if [[ ! -f "$PROJECT_PATH" ]]; then
   exit 2
 fi
 
+if [[ ! -f "$TEST_PROJECT_PATH" ]]; then
+  echo "Test project file not found: $TEST_PROJECT_PATH" >&2
+  exit 2
+fi
+
 echo "Restoring..."
-dotnet restore "$PROJECT_PATH"
+dotnet restore "$TEST_PROJECT_PATH"
 
 echo "Building..."
-dotnet build "$PROJECT_PATH" \
+dotnet build "$TEST_PROJECT_PATH" \
   -c "$CONFIGURATION" \
   --no-restore
 
 echo "Testing..."
-dotnet test "$PROJECT_PATH" \
+dotnet test "$TEST_PROJECT_PATH" \
   -c "$CONFIGURATION" \
-  --no-build
+  --no-build \
+  --no-restore
 
 echo "Publishing..."
+VERSION_ARGUMENTS=()
+if [[ -n "$PACKAGE_VERSION" ]]; then
+  VERSION_ARGUMENTS=(
+    "/p:Version=$PACKAGE_VERSION"
+    "/p:AssemblyVersion=$PACKAGE_VERSION.0"
+    "/p:FileVersion=$PACKAGE_VERSION.0"
+    "/p:InformationalVersion=$PACKAGE_VERSION"
+  )
+fi
+
 dotnet publish "$PROJECT_PATH" \
   -c "$CONFIGURATION" \
   -f "$FRAMEWORK" \
@@ -82,7 +111,8 @@ dotnet publish "$PROJECT_PATH" \
   --self-contained true \
   -o "$PUBLISH_DIR" \
   /p:PublishSingleFile=false \
-  /p:PublishTrimmed=false
+  /p:PublishTrimmed=false \
+  "${VERSION_ARGUMENTS[@]}"
 
 if [[ ! -f "$PUBLISH_DIR/playwright.ps1" ]]; then
   echo "Playwright install script not found in publish directory: $PUBLISH_DIR/playwright.ps1" >&2

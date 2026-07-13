@@ -14,7 +14,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="../../../src/PlaywrightRunner/PlaywrightRunner.csproj" />
+    <ProjectReference Include="../../../src/ScriptTrail/ScriptTrail.csproj" />
   </ItemGroup>
 
 </Project>

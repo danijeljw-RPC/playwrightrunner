@@ -10,12 +10,23 @@ param(
 Set-StrictMode -Version Latest
 $ErrorActionPreference = "Stop"
 
-$Project = "PlaywrightRunner"
+$Project = "ScriptTrail"
 $ProjectPath = "src\${Project}\${Project}.csproj"
+$TestProjectPath = "src\Tests\ScriptTrail.Tests\ScriptTrail.Tests.csproj"
 $FlowFile = "package-smoke.yaml"
 $Configuration = "Release"
 $Framework = "net10.0"
 $BrowsersNormalized = $Browsers.ToLowerInvariant()
+$PackageVersion = $null
+
+if (-not [string]::IsNullOrWhiteSpace($VersionSuffix)) {
+    if ($VersionSuffix -notmatch '^v?(\d+\.\d+\.\d+)$') {
+        Write-Error "Package version must match vX.Y.Z or X.Y.Z: $VersionSuffix"
+        exit 2
+    }
+
+    $PackageVersion = $Matches[1]
+}
 
 $OutputRoot = "artifacts"
 $PublishRoot = Join-Path $OutputRoot "publish"
@@ -60,10 +71,18 @@ $ZipFile = Join-Path $ZipDir "$ZipBaseName.zip"
 
 Write-Host "Runtime: $Runtime"
 Write-Host "Browsers: $Browsers"
+if ($null -ne $PackageVersion) {
+    Write-Host "Version: $PackageVersion"
+}
 
 Write-Host "Cleaning publish output..."
 if (-not (Test-Path $ProjectPath)) {
     Write-Error "Project file not found: $ProjectPath"
+    exit 2
+}
+
+if (-not (Test-Path $TestProjectPath)) {
+    Write-Error "Test project file not found: $TestProjectPath"
     exit 2
 }
 
@@ -78,19 +97,30 @@ New-Item -ItemType Directory -Path $PublishDir -Force | Out-Null
 New-Item -ItemType Directory -Path $ZipDir -Force | Out-Null
 
 Write-Host "Restoring..."
-dotnet restore $ProjectPath
+dotnet restore $TestProjectPath
 
 Write-Host "Building..."
-dotnet build $ProjectPath `
+dotnet build $TestProjectPath `
     -c $Configuration `
     --no-restore
 
 Write-Host "Testing..."
-dotnet test $ProjectPath `
+dotnet test $TestProjectPath `
     -c $Configuration `
-    --no-build
+    --no-build `
+    --no-restore
 
 Write-Host "Publishing..."
+$VersionArguments = @()
+if ($null -ne $PackageVersion) {
+    $VersionArguments = @(
+        "/p:Version=$PackageVersion",
+        "/p:AssemblyVersion=$PackageVersion.0",
+        "/p:FileVersion=$PackageVersion.0",
+        "/p:InformationalVersion=$PackageVersion"
+    )
+}
+
 dotnet publish $ProjectPath `
     -c $Configuration `
     -f $Framework `
@@ -98,9 +128,11 @@ dotnet publish $ProjectPath `
     --self-contained true `
     -o $PublishDir `
     /p:PublishSingleFile=false `
-    /p:PublishTrimmed=false
+    /p:PublishTrimmed=false `
+    @VersionArguments
 
 Write-Host "Installing bundled Playwright browsers: $($PlaywrightBrowsers -join ' ')"
+$PreviousPlaywrightBrowsersPath = $env:PLAYWRIGHT_BROWSERS_PATH
 Push-Location $PublishDir
 try {
     if (-not (Test-Path ".\playwright.ps1")) {
@@ -108,7 +140,6 @@ try {
         exit 2
     }
 
-    $PreviousPlaywrightBrowsersPath = $env:PLAYWRIGHT_BROWSERS_PATH
     $env:PLAYWRIGHT_BROWSERS_PATH = Join-Path (Get-Location) "ms-playwright"
 
     & ".\playwright.ps1" install @PlaywrightBrowsers

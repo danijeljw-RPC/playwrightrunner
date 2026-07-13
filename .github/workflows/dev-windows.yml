@@ -1,0 +1,119 @@
+name: Dev Windows Build
+
+on:
+  push:
+    branches:
+      - dev
+
+permissions:
+  contents: read
+
+concurrency:
+  group: dev-windows-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check-commit:
+    name: Check commit message
+    runs-on: ubuntu-latest
+    outputs:
+      run-windows: ${{ steps.commit-message.outputs.run-windows }}
+    steps:
+      - name: Skip version-only commits
+        id: commit-message
+        shell: bash
+        env:
+          COMMIT_MESSAGE: ${{ github.event.head_commit.message }}
+        run: |
+          if [[ "$COMMIT_MESSAGE" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "Version-only commit detected; skipping the Windows build."
+            echo "run-windows=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "run-windows=true" >> "$GITHUB_OUTPUT"
+          fi
+
+  test-windows:
+    name: Build and smoke test Windows
+    needs: check-commit
+    if: needs.check-commit.outputs.run-windows == 'true'
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Restore
+        shell: pwsh
+        run: dotnet restore src/Tests/ScriptTrail.Tests/ScriptTrail.Tests.csproj
+
+      - name: Build
+        shell: pwsh
+        run: dotnet build src/Tests/ScriptTrail.Tests/ScriptTrail.Tests.csproj -c Release --no-restore
+
+      - name: Run unit tests
+        shell: pwsh
+        run: dotnet test src/Tests/ScriptTrail.Tests/ScriptTrail.Tests.csproj -c Release --no-build --no-restore
+
+      - name: Publish Windows application
+        shell: pwsh
+        run: |
+          dotnet publish src/ScriptTrail/ScriptTrail.csproj `
+            -c Release `
+            -f net10.0 `
+            -r win-x64 `
+            --self-contained true `
+            -o artifacts/dev-win-x64 `
+            /p:PublishSingleFile=false `
+            /p:PublishTrimmed=false
+
+      - name: Install Chromium in published application
+        shell: pwsh
+        run: |
+          $publishDir = Resolve-Path "artifacts/dev-win-x64"
+          $env:PLAYWRIGHT_BROWSERS_PATH = Join-Path $publishDir "ms-playwright"
+
+          Push-Location $publishDir
+          try {
+            & ".\playwright.ps1" install chromium
+            if ($LASTEXITCODE -ne 0) {
+              exit $LASTEXITCODE
+            }
+          }
+          finally {
+            Pop-Location
+          }
+
+      - name: Run specification v1 and v2 smoke flows
+        shell: pwsh
+        run: |
+          $exe = Resolve-Path "artifacts/dev-win-x64/ScriptTrail.exe"
+
+          & $exe "dev-smoke-v1.yaml"
+          if ($LASTEXITCODE -ne 0) {
+            exit $LASTEXITCODE
+          }
+
+          if (-not (Test-Path "TestResults/report.json")) {
+            throw "The specification v1 result file was not created."
+          }
+
+          & $exe "dev-smoke-v2.yaml"
+          if ($LASTEXITCODE -ne 0) {
+            exit $LASTEXITCODE
+          }
+
+          if (-not (Test-Path "TestResults/dev-smoke-v2/report.json")) {
+            throw "The specification v2 result file was not created."
+          }
+
+      - name: Upload smoke-test evidence
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: dev-windows-smoke-results
+          path: TestResults
+          if-no-files-found: warn

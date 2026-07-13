@@ -1,7 +1,7 @@
-using PlaywrightRunner.Services;
+using ScriptTrail.Services;
 using Xunit;
 
-namespace PlaywrightRunner.Tests;
+namespace ScriptTrail.Tests;
 
 public sealed class FlowFileLoaderTests
 {
@@ -21,10 +21,13 @@ public sealed class FlowFileLoaderTests
 
         Assert.Equal(1, flow.SpecVersion);
         Assert.Equal("Legacy Flow", flow.Name);
+        Assert.Equal(
+            FlowResultPathResolver.LegacyDefaultPath,
+            FlowResultPathResolver.Resolve(flow));
     }
 
     [Fact]
-    public void Load_AcceptsSupportedSpecVersion()
+    public void Load_AcceptsVersionOne()
     {
         var path = WriteTempFile(
             ".json",
@@ -43,20 +46,58 @@ public sealed class FlowFileLoaderTests
     }
 
     [Fact]
-    public void Load_RejectsNewerSpecVersion()
+    public void Load_AcceptsVersionTwoWithReportPath()
     {
         var path = WriteTempFile(
             ".yaml",
             """
             specVersion: 2
+            name: Current Flow
+            reportPath: TestResults/current/results.json
+            steps: []
+            """);
+
+        var flow = FlowFileLoader.Load(path);
+
+        Assert.Equal(2, flow.SpecVersion);
+        Assert.Equal(
+            "TestResults/current/results.json",
+            FlowResultPathResolver.Resolve(flow));
+    }
+
+    [Fact]
+    public void Load_RejectsVersionTwoWithoutReportPath()
+    {
+        var path = WriteTempFile(
+            ".yaml",
+            """
+            specVersion: 2
+            name: Missing Result Path
+            steps: []
+            """);
+
+        var ex = Assert.Throws<InvalidOperationException>(() =>
+            FlowFileLoader.Load(path));
+
+        Assert.Contains("requires reportPath", ex.Message);
+    }
+
+    [Fact]
+    public void Load_RejectsNewerSpecVersion()
+    {
+        var path = WriteTempFile(
+            ".yaml",
+            """
+            specVersion: 3
             name: Future Flow
             steps: []
             """);
 
-        var ex = Assert.Throws<InvalidOperationException>(() => FlowFileLoader.Load(path));
+        var ex = Assert.Throws<InvalidOperationException>(() =>
+            FlowFileLoader.Load(path));
 
-        Assert.Contains("specVersion 2", ex.Message);
-        Assert.Contains("supports up to specVersion 1", ex.Message);
+        Assert.Contains("specVersion 3", ex.Message);
+        Assert.Contains("latest supported version is 2", ex.Message);
     }
 
     [Fact]
@@ -101,15 +142,37 @@ public sealed class FlowFileLoaderTests
             steps: []
             """);
 
-        var ex = Assert.Throws<InvalidOperationException>(() => FlowFileLoader.Load(path));
+        var ex = Assert.Throws<InvalidOperationException>(() =>
+            FlowFileLoader.Load(path));
 
         Assert.Contains("headless: false", ex.Message);
         Assert.Contains("not supported", ex.Message);
     }
 
+    [Fact]
+    public void Parse_AllowsHistoricalHeadedFlowForReporting()
+    {
+        var path = WriteTempFile(
+            ".yaml",
+            """
+            specVersion: 1
+            name: Historical Flow
+            browser: chromium
+            headless: false
+            steps: []
+            """);
+
+        var flow = FlowFileLoader.Parse(path);
+
+        Assert.False(flow.Headless);
+    }
+
     private static string WriteTempFile(string extension, string content)
     {
-        var path = Path.Combine(Path.GetTempPath(), $"{Guid.NewGuid():N}{extension}");
+        var path = Path.Combine(
+            Path.GetTempPath(),
+            $"{Guid.NewGuid():N}{extension}");
+
         File.WriteAllText(path, content);
         return path;
     }

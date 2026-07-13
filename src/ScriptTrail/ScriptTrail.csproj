@@ -1,0 +1,35 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+
+    <!-- Binary and namespace -->
+    <AssemblyName>ScriptTrail</AssemblyName>
+    <RootNamespace>ScriptTrail</RootNamespace>
+
+    <!-- Windows executable metadata -->
+    <AssemblyTitle>ScriptTrail</AssemblyTitle>
+    <Product>ScriptTrail</Product>
+    <Description>Runs repeatable browser workflows and produces evidence reports.</Description>
+    <Company>Danijel Wynyard</Company>
+    <Authors>Danijel Wynyard</Authors>
+    <Copyright>Copyright © 2026 Danijel Wynyard</Copyright>
+
+    <!-- Version metadata -->
+    <Version>0.3.0</Version>
+    <AssemblyVersion>0.3.0.0</AssemblyVersion>
+    <FileVersion>0.3.0.0</FileVersion>
+    <InformationalVersion>0.3.0</InformationalVersion>
+    <IncludeSourceRevisionInInformationalVersion>false</IncludeSourceRevisionInInformationalVersion>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Playwright" Version="1.61.0" />
+    <PackageReference Include="QuestPDF" Version="2026.7.1" />
+    <PackageReference Include="YamlDotNet" Version="18.1.0" />
+  </ItemGroup>
+
+</Project>

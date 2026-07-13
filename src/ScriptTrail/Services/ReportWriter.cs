@@ -1,7 +1,7 @@
 using System.Text.Json;
-using PlaywrightRunner.Models;
+using ScriptTrail.Models;
 
-namespace PlaywrightRunner.Services;
+namespace ScriptTrail.Services;
 
 public sealed class ReportWriter
 {

@@ -1,8 +1,8 @@
 using System.Text.RegularExpressions;
 using Microsoft.Playwright;
-using PlaywrightRunner.Models;
+using ScriptTrail.Models;
 
-namespace PlaywrightRunner.Runtime;
+namespace ScriptTrail.Runtime;
 
 public sealed class FlowStepExecutor
 {

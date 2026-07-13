@@ -1,0 +1,15 @@
+specVersion: 2
+name: Dev Windows Smoke v2
+reportPath: TestResults/dev-smoke-v2/report.json
+browser: chromium
+headless: true
+
+steps:
+  - name: Open specification v2 smoke page
+    action: goto
+    url: "data:text/html,%3C!doctype%20html%3E%3Ctitle%3EScriptTrail%20v2%20Smoke%3C%2Ftitle%3E%3Ch1%20id%3D%22status%22%3ESpecification%20v2%20passed%3C%2Fh1%3E"
+
+  - name: Confirm specification v2 content
+    action: expect-text
+    selector: "#status"
+    value: Specification v2 passed

@@ -492,3 +492,4 @@ $RECYCLE.BIN/
 *_preprod*.yaml
 *_pp*.yaml
 *_prod*.yaml
+scripts/run-*-suite.ps1
