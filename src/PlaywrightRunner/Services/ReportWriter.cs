@@ -5,11 +5,16 @@ namespace PlaywrightRunner.Services;
 
 public sealed class ReportWriter
 {
-    public async Task WriteAsync(IReadOnlyCollection<StepResult> results)
+    public async Task WriteAsync(
+        IReadOnlyCollection<StepResult> results,
+        string reportPath)
     {
-        Directory.CreateDirectory("TestResults");
+        var directory = Path.GetDirectoryName(reportPath);
 
-        var reportPath = Path.Combine("TestResults", "report.json");
+        if (!string.IsNullOrWhiteSpace(directory))
+        {
+            Directory.CreateDirectory(directory);
+        }
 
         await File.WriteAllTextAsync(
             reportPath,

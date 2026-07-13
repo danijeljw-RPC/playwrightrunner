@@ -7,7 +7,7 @@ namespace PlaywrightRunner.Services;
 
 public static class FlowFileLoader
 {
-    private const int CurrentSpecVersion = 1;
+    private const int CurrentSpecVersion = 2;
 
     public static FlowDefinition Load(string path)
     {
@@ -37,13 +37,17 @@ public static class FlowFileLoader
         if (flow is null)
             throw new InvalidOperationException("Could not parse flow file.");
 
-        if (flow.SpecVersion < 1)
-            throw new InvalidOperationException("specVersion must be 1 or greater.");
-
-        if (flow.SpecVersion > CurrentSpecVersion)
+        if (flow.SpecVersion < FlowSpecification.MinimumSupportedVersion)
         {
             throw new InvalidOperationException(
-                $"Flow file uses specVersion {flow.SpecVersion}, but this runner supports up to specVersion {CurrentSpecVersion}.");
+                $"specVersion must be {FlowSpecification.MinimumSupportedVersion} or greater.");
+        }
+
+        if (flow.SpecVersion > FlowSpecification.CurrentVersion)
+        {
+            throw new InvalidOperationException(
+                $"specVersion {flow.SpecVersion} is not supported. " +
+                $"The latest supported version is {FlowSpecification.CurrentVersion}.");
         }
 
         if (!flow.Headless)

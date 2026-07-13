@@ -51,7 +51,7 @@ public sealed class FlowRunner
             }
         }
 
-        await _reportWriter.WriteAsync(results);
+        await _reportWriter.WriteAsync(results, flow.ReportPath);
 
         return results.All(x => x.Passed) ? 0 : 1;
     }

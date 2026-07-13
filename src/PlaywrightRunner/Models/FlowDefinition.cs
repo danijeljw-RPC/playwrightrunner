@@ -2,8 +2,9 @@ namespace PlaywrightRunner.Models;
 
 public sealed class FlowDefinition
 {
-    public int SpecVersion { get; set; } = 1;
+    public int SpecVersion { get; set; } = FlowSpecification.CurrentVersion;
     public string Name { get; set; } = "Unnamed Flow";
+    public string ReportPath { get; set; } = "TestResults/report.json";
     public string? BaseUrl { get; set; }
     public string Browser { get; set; } = "chromium";
     public bool Headless { get; set; } = true;
