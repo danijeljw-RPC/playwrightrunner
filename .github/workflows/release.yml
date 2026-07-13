@@ -13,11 +13,26 @@ jobs:
     name: Validate tag
     runs-on: ubuntu-latest
     steps:
+      - name: Checkout repository history
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
       - name: Require vX.Y.Z tag
         shell: bash
         run: |
           if [[ ! "$GITHUB_REF_NAME" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
             echo "Release tags must match vX.Y.Z, for example v1.0.0." >&2
+            exit 1
+          fi
+
+      - name: Require tag commit to be on main
+        shell: bash
+        run: |
+          tag_commit="$(git rev-parse "${GITHUB_REF}^{commit}")"
+
+          if ! git merge-base --is-ancestor "$tag_commit" origin/main; then
+            echo "Release tag $GITHUB_REF_NAME must point to a commit on the main branch." >&2
             exit 1
           fi
 
@@ -40,10 +55,10 @@ jobs:
     runs-on: ${{ matrix.runtime.os }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Setup .NET
-        uses: actions/setup-dotnet@v4
+        uses: actions/setup-dotnet@v5
         with:
           dotnet-version: 10.0.x
 
@@ -58,7 +73,7 @@ jobs:
         run: ./scripts/package.ps1 -Runtime "${{ matrix.runtime.name }}" -Browsers "${{ matrix.browser }}" -VersionSuffix "${{ github.ref_name }}"
 
       - name: Upload package
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: PlaywrightRunner-${{ matrix.runtime.name }}-${{ matrix.browser }}-${{ github.ref_name }}
           path: artifacts/zips/*.zip
@@ -70,7 +85,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Download packages
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           path: artifacts/zips
           merge-multiple: true
